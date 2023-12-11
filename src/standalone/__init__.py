@@ -6,7 +6,7 @@ from common.infra import launch_instances, setup_security_group
 from common.utils import wait_instance
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from standalone.secrets import MYSQL_APP_PASSWORD, MYSQL_APP_USER
+from standalone.secrets import MYSQL_ROOT_PASSWORD
 
 logger = logging.getLogger(__name__)
 
@@ -31,12 +31,8 @@ async def standalone_setup():
     inst = instances[0]
     await asyncio.to_thread(wait_instance, inst)
 
-    script_tpl = jinja_env.get_template("setup.sh.j2")
-    setup = ScriptSetup(
-        script_tpl.render(
-            mysql_app_user=MYSQL_APP_USER, mysql_app_password=MYSQL_APP_PASSWORD
-        )
-    )
+    script_tpl = jinja_env.get_template("standalone.sh.j2")
+    setup = ScriptSetup(script_tpl.render(mysql_root_password=MYSQL_ROOT_PASSWORD))
     bootstrap_instance(inst, setup)
 
     logger.info(f"Public IP: {inst.public_ip_address}")

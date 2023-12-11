@@ -5,7 +5,7 @@ dnf install -y mysql-community-server
 
 tee /etc/my.cnf.d/project.cnf <<EOF
 [mysqld]
-bind-address = 0.0.0.0
+bind-address=0.0.0.0
 EOF
 
 systemctl enable --now mysqld

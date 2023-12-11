@@ -6,19 +6,18 @@ from common.config import (
     AWS_RES_NAME,
     IMAGE_ID,
 )
-from common.utils import ec2_cli, ec2_res, get_default_vpc
+from common.utils import ec2_cli, ec2_res
 
 if TYPE_CHECKING:
     from mypy_boto3_ec2.literals import InstanceTypeType
-    from mypy_boto3_ec2.service_resource import Instance, SecurityGroup
+    from mypy_boto3_ec2.service_resource import Instance, SecurityGroup, Vpc
     from mypy_boto3_ec2.type_defs import IpPermissionTypeDef
 
 logger = logging.getLogger(__name__)
 
 
-def setup_security_group(permissions: Sequence["IpPermissionTypeDef"] = ()):
+def setup_security_group(vpc: "Vpc", permissions: Sequence["IpPermissionTypeDef"] = ()):
     logger.info("Setting up security group")
-    vpc = get_default_vpc()
     sg = ec2_res.create_security_group(
         GroupName=AWS_RES_NAME,
         Description=AWS_RES_NAME,

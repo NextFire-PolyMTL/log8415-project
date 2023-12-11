@@ -3,7 +3,7 @@ import logging
 
 from common.bootstrap import ScriptSetup, bootstrap_instance
 from common.infra import launch_instances, setup_security_group
-from common.utils import wait_instance
+from common.utils import get_default_vpc, wait_instance
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from standalone.secrets import MYSQL_ROOT_PASSWORD
@@ -16,7 +16,9 @@ jinja_env = Environment(
 
 
 async def standalone_setup():
+    vpc = get_default_vpc()
     sg = setup_security_group(
+        vpc,
         [
             {
                 "FromPort": 3306,
@@ -24,7 +26,7 @@ async def standalone_setup():
                 "IpProtocol": "tcp",
                 "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
             }
-        ]
+        ],
     )
 
     instances = launch_instances(sg, ["t2.micro"])

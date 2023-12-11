@@ -2,7 +2,7 @@
 
 dnf install -y mysql-server
 
-tee -a /etc/my.cnf <<EOF
+tee /etc/my.cnf.d/project.cnf <<EOF
 [mysqld]
 bind-address = 0.0.0.0
 EOF
@@ -13,4 +13,11 @@ mysql <<EOF
 CREATE USER '{{mysql_app_user}}'@'%' IDENTIFIED BY '{{mysql_app_password}}';
 GRANT ALL PRIVILEGES ON *.* TO '{{mysql_app_user}}'@'%' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
+EOF
+
+curl -O https://downloads.mysql.com/docs/sakila-db.tar.gz
+tar -xzf sakila-db.tar.gz
+mysql <<EOF
+SOURCE sakila-db/sakila-schema.sql;
+SOURCE sakila-db/sakila-data.sql;
 EOF

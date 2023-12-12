@@ -10,7 +10,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 from cluster.secrets import MYSQL_ROOT_PASSWORD
 
 if TYPE_CHECKING:
-    from mypy_boto3_ec2.service_resource import Vpc
+    from mypy_boto3_ec2.service_resource import Instance, Vpc
 
 logger = logging.getLogger(__name__)
 
@@ -69,27 +69,27 @@ async def make_cluster(vpc: "Vpc"):
             tg.create_task(asyncio.to_thread(provision_instance, worker, setup))
 
     logger.info("Setup mysql on all instances")
-    script_tpl = jinja_env.get_template("cluster_mysql.sh.j2")
-    setup = ScriptSetup(script_tpl.render(manager=manager))
     async with asyncio.TaskGroup() as tg:
         for inst in instances:
-            tg.create_task(asyncio.to_thread(provision_instance, inst, setup))
-
-    logger.info("Setup mysql root password on manager")
-    script_tpl = jinja_env.get_template("mysql_root_setup.sh.j2")
-    setup = ScriptSetup(script_tpl.render(mysql_root_password=MYSQL_ROOT_PASSWORD))
-    provision_instance(manager, setup)
-
-    # Sakila hardcodes InnoDB engine (!= NDBENGINE) hence it is not replicated
-    # across the cluster. We load it on all instances.
-    logger.info("Load sakila on all instances")
-    script_tpl = jinja_env.get_template("sakila.sh.j2")
-    setup = ScriptSetup(script_tpl.render(mysql_root_password=MYSQL_ROOT_PASSWORD))
-    async with asyncio.TaskGroup() as tg:
-        for inst in instances:
-            tg.create_task(asyncio.to_thread(provision_instance, inst, setup))
+            tg.create_task(asyncio.to_thread(_setup_mysqld, inst, manager))
 
     logger.info(f"Manager: {manager.public_ip_address}")
     logger.info(f"Workers: {[w.public_ip_address for w in workers]}")
 
     return manager, workers, sg
+
+
+def _setup_mysqld(instance: "Instance", manager: "Instance"):
+    script_tpl = jinja_env.get_template("cluster_mysql.sh.j2")
+    setup = ScriptSetup(script_tpl.render(manager=manager))
+    provision_instance(instance, setup)
+
+    script_tpl = jinja_env.get_template("mysql_root_setup.sh.j2")
+    setup = ScriptSetup(script_tpl.render(mysql_root_password=MYSQL_ROOT_PASSWORD))
+    provision_instance(instance, setup)
+
+    # Sakila hardcodes InnoDB engine (!= NDBENGINE) hence it is not replicated
+    # across the cluster. We load it on all instances.
+    script_tpl = jinja_env.get_template("sakila.sh.j2")
+    setup = ScriptSetup(script_tpl.render(mysql_root_password=MYSQL_ROOT_PASSWORD))
+    provision_instance(instance, setup)

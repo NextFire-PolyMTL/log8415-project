@@ -6,6 +6,7 @@ authors = ["NextFire <git@yuru.moe>"]
 readme = "README.md"
 packages = [
     { include = "common", from = "src" },
+    { include = "templates", from = "src" },
     { include = "standalone", from = "src" },
     { include = "cluster", from = "src" },
     { include = "patterns", from = "src" },

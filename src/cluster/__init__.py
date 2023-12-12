@@ -11,7 +11,7 @@ from cluster.secrets import MYSQL_ROOT_PASSWORD
 logger = logging.getLogger(__name__)
 
 jinja_env = Environment(
-    loader=PackageLoader(__package__), autoescape=select_autoescape()
+    loader=PackageLoader("templates", ""), autoescape=select_autoescape()
 )
 
 
@@ -67,8 +67,8 @@ async def cluster_setup():
         for worker in workers:
             tg.create_task(asyncio.to_thread(bootstrap_instance, worker, setup))
 
-    logger.info(f"Setup mysql on manager {manager.public_ip_address}")
-    script_tpl = jinja_env.get_template("mysql.sh.j2")
+    logger.info(f"Setup sakila db on manager {manager.public_ip_address}")
+    script_tpl = jinja_env.get_template("sakila.sh.j2")
     setup = ScriptSetup(script_tpl.render(mysql_root_password=MYSQL_ROOT_PASSWORD))
     bootstrap_instance(manager, setup)
 

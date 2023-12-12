@@ -11,7 +11,7 @@ from standalone.secrets import MYSQL_ROOT_PASSWORD
 logger = logging.getLogger(__name__)
 
 jinja_env = Environment(
-    loader=PackageLoader(__package__), autoescape=select_autoescape()
+    loader=PackageLoader("templates", ""), autoescape=select_autoescape()
 )
 
 
@@ -34,6 +34,10 @@ async def standalone_setup():
     await asyncio.to_thread(wait_instance, inst)
 
     script_tpl = jinja_env.get_template("standalone.sh.j2")
+    setup = ScriptSetup(script_tpl.render())
+    bootstrap_instance(inst, setup)
+
+    script_tpl = jinja_env.get_template("sakila.sh.j2")
     setup = ScriptSetup(script_tpl.render(mysql_root_password=MYSQL_ROOT_PASSWORD))
     bootstrap_instance(inst, setup)
 

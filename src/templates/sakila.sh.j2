@@ -3,6 +3,8 @@
 systemctl start mysqld
 
 TEMP_PASSWORD=$(journalctl -u mysqld | grep 'temporary password' | awk '{print $NF}')
+[[ -z $TEMP_PASSWORD ]] && exit 1
+
 mysql -uroot -p$TEMP_PASSWORD --connect-expired-password <<EOF
 ALTER USER 'root'@'localhost' IDENTIFIED BY '{{mysql_root_password}}';
 UPDATE mysql.user SET Host='%' WHERE User='root' AND Host='localhost';

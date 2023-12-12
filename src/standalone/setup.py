@@ -34,7 +34,7 @@ async def standalone_setup():
     await asyncio.to_thread(wait_instance, inst)
 
     script_tpl = jinja_env.get_template("standalone.sh.j2")
-    setup = ScriptSetup(script_tpl.render())
+    setup = ScriptSetup(script_tpl.render(mysql_root_password=MYSQL_ROOT_PASSWORD))
     bootstrap_instance(inst, setup)
 
     script_tpl = jinja_env.get_template("sakila.sh.j2")

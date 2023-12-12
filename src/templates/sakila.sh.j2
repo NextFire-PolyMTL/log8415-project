@@ -1,18 +1,8 @@
 #!/bin/bash -xe
 
-systemctl start mysqld
+wget https://downloads.mysql.com/docs/sakila-db.tar.gz
+tar xzf sakila-db.tar.gz
 
-TEMP_PASSWORD=$(journalctl -u mysqld | grep 'temporary password' | awk '{print $NF}')
-[[ -z $TEMP_PASSWORD ]] && exit 1
-
-mysql -uroot -p$TEMP_PASSWORD --connect-expired-password <<EOF
-ALTER USER 'root'@'localhost' IDENTIFIED BY '{{mysql_root_password}}';
-UPDATE mysql.user SET Host='%' WHERE User='root' AND Host='localhost';
-FLUSH PRIVILEGES;
-EOF
-
-curl -O https://downloads.mysql.com/docs/sakila-db.tar.gz
-tar -xzf sakila-db.tar.gz
 mysql -uroot -p{{mysql_root_password}} <<EOF
 SOURCE sakila-db/sakila-schema.sql;
 SOURCE sakila-db/sakila-data.sql;

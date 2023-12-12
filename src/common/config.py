@@ -7,5 +7,5 @@ AWS_RES_NAME = "Project"
 AWS_KEYPAIR_NAME = "vockey"
 AWS_KEYPAIR_PEM = Path("labsuser.pem")
 
-IMAGE_ID = "ami-07d75f492ac3a326f"  # Rocky-9-EC2-Base-9.2-20230513.0.x86_64
-SSH_USERNAME = "rocky"
+IMAGE_ID = "ami-055744c75048d8296"  # Canonical, Ubuntu, 18.04 LTS, amd64 bionic image build on 2023-05-31
+SSH_USERNAME = "ubuntu"

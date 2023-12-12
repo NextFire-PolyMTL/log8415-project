@@ -1,0 +1,34 @@
+#!/bin/bash -xe
+
+export DEBIAN_FRONTEND=noninteractive
+
+wget https://dev.mysql.com/get/Downloads/MySQL-Cluster-7.6/mysql-cluster-community-data-node_7.6.6-1ubuntu18.04_amd64.deb
+apt update
+apt install libclass-methodmaker-perl
+dpkg -i mysql-cluster-community-data-node_7.6.6-1ubuntu18.04_amd64.deb
+
+mkdir -p /usr/local/mysql/data
+
+tee /etc/my.cnf <<EOF
+[mysql_cluster]
+ndb-connectstring=ip-{{manager.private_ip_address | replace(".", "-")}}.ec2.internal
+EOF
+
+tee /etc/systemd/system/ndbd.service <<EOF
+[Unit]
+Description=MySQL NDB Data Node Daemon
+After=network.target auditd.service
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/ndbd
+ExecReload=/bin/kill -HUP \$MAINPID
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable --now ndbd

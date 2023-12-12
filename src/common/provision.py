@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 @backoff.on_exception(
     backoff.constant, (ssh_exception.NoValidConnectionsError, TimeoutError)
 )
-def bootstrap_instance(
+def provision_instance(
     instance: "Instance", setup: Callable[["Instance", SSHClient], None]
 ):
-    logger.info(f"Bootstrapping {instance=} {instance.public_ip_address=}")
+    logger.info(f"Provisioning {instance} ({instance.public_ip_address}) with {setup=}")
     ssh_key = RSAKey.from_private_key_file(AWS_KEYPAIR_PEM.as_posix())
     with SSHClient() as ssh_client:
         ssh_client.set_missing_host_key_policy(AutoAddPolicy())

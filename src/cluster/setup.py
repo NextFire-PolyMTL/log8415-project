@@ -1,8 +1,8 @@
 import asyncio
 import logging
 
-from common.bootstrap import ScriptSetup, bootstrap_instance
 from common.infra import launch_instances, setup_security_group
+from common.provision import ScriptSetup, provision_instance
 from common.utils import get_default_vpc, wait_instance
 from jinja2 import Environment, PackageLoader, select_autoescape
 
@@ -49,31 +49,41 @@ async def cluster_setup():
     manager = instances[0]
     workers = instances[1:]
 
+    logger.info("Setup mysql-apt-config on all instances")
+    script_tpl = jinja_env.get_template("mysql_apt_config.sh.j2")
+    setup = ScriptSetup(script_tpl.render(server="mysql-cluster-8.0"))
+    async with asyncio.TaskGroup() as tg:
+        for inst in instances:
+            tg.create_task(asyncio.to_thread(provision_instance, inst, setup))
+
     logger.info("Setup mgmd on manager")
     script_tpl = jinja_env.get_template("cluster_mgmd.sh.j2")
     setup = ScriptSetup(script_tpl.render(manager=manager, workers=workers))
-    bootstrap_instance(manager, setup)
+    provision_instance(manager, setup)
 
     logger.info("Setup ndbd on worker instances")
     script_tpl = jinja_env.get_template("cluster_ndbd.sh.j2")
     setup = ScriptSetup(script_tpl.render(manager=manager))
     async with asyncio.TaskGroup() as tg:
         for worker in workers:
-            tg.create_task(asyncio.to_thread(bootstrap_instance, worker, setup))
+            tg.create_task(asyncio.to_thread(provision_instance, worker, setup))
 
     logger.info("Setup mysql on all instances")
     script_tpl = jinja_env.get_template("cluster_mysql.sh.j2")
-    setup = ScriptSetup(
-        script_tpl.render(manager=manager, mysql_root_password=MYSQL_ROOT_PASSWORD)
-    )
+    setup = ScriptSetup(script_tpl.render(manager=manager))
     async with asyncio.TaskGroup() as tg:
         for inst in instances:
-            tg.create_task(asyncio.to_thread(bootstrap_instance, inst, setup))
+            tg.create_task(asyncio.to_thread(provision_instance, inst, setup))
+
+    logger.info("Setup mysql root password on manager")
+    script_tpl = jinja_env.get_template("mysql_root_setup.sh.j2")
+    setup = ScriptSetup(script_tpl.render(mysql_root_password=MYSQL_ROOT_PASSWORD))
+    provision_instance(manager, setup)
 
     logger.info("Load sakila on manager")
     script_tpl = jinja_env.get_template("sakila.sh.j2")
     setup = ScriptSetup(script_tpl.render(mysql_root_password=MYSQL_ROOT_PASSWORD))
-    bootstrap_instance(manager, setup)
+    provision_instance(manager, setup)
 
     logger.info(f"Manager: {manager.public_ip_address}")
     logger.info(f"Workers: {[w.public_ip_address for w in workers]}")

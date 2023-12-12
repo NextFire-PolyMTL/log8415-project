@@ -1,12 +1,14 @@
 #!/bin/bash -xe
 
-export DEBIAN_FRONTEND=noninteractive
+if [ ! -f /swapfile ]; then
+    fallocate -l 1G /swapfile
+    chmod 600 /swapfile
+    mkswap /swapfile
+    swapon /swapfile
+fi
 
 apt update
-apt install -y libclass-methodmaker-perl
-
-wget https://dev.mysql.com/get/Downloads/MySQL-Cluster-7.6/mysql-cluster-community-data-node_7.6.6-1ubuntu18.04_amd64.deb
-dpkg -i mysql-cluster-community-data-node_7.6.6-1ubuntu18.04_amd64.deb
+DEBIAN_FRONTEND=noninteractive apt install -y mysql-cluster-community-data-node
 
 mkdir -p /usr/local/mysql/data
 

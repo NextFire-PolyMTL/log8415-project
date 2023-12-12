@@ -1,36 +1,16 @@
 #!/bin/bash -xe
 
-export DEBIAN_FRONTEND=noninteractive
-
 apt update
-apt install -y libaio1 libmecab2
-
-wget https://dev.mysql.com/get/Downloads/MySQL-Cluster-7.6/mysql-cluster_7.6.6-1ubuntu18.04_amd64.deb-bundle.tar
-mkdir install
-tar xvf mysql-cluster_7.6.6-1ubuntu18.04_amd64.deb-bundle.tar -C install
-
-dpkg -i install/mysql-common_7.6.6-1ubuntu18.04_amd64.deb
-
-dpkg -i install/mysql-cluster-community-client_7.6.6-1ubuntu18.04_amd64.deb
-dpkg -i install/mysql-client_7.6.6-1ubuntu18.04_amd64.deb
-
-dpkg -i install/mysql-cluster-community-server_7.6.6-1ubuntu18.04_amd64.deb
-dpkg -i install/mysql-server_7.6.6-1ubuntu18.04_amd64.deb
+DEBIAN_FRONTEND=noninteractive apt install -y mysql-cluster-community-server
 
 tee /etc/mysql/my.cnf <<EOF
 [mysqld]
 ndbcluster
+default-storage-engine=ndbcluster
 bind-address=0.0.0.0
-tls_version=TLSv1.2,TLSv1.3
 
 [mysql_cluster]
 ndb-connectstring=ip-{{manager.private_ip_address | replace(".", "-")}}.ec2.internal
 EOF
 
 systemctl restart mysql
-
-mysql -uroot <<EOF
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{mysql_root_password}}';
-UPDATE mysql.user SET Host='%' WHERE User='root' AND Host='localhost';
-FLUSH PRIVILEGES;
-EOF

@@ -3,7 +3,7 @@ import logging
 
 from common.config import LOG_LEVEL
 
-from cluster import cluster_setup
+from cluster.setup import cluster_setup
 
 if __name__ == "__main__":
     logging.basicConfig(level=LOG_LEVEL)

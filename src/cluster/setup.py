@@ -80,10 +80,14 @@ async def cluster_setup():
     setup = ScriptSetup(script_tpl.render(mysql_root_password=MYSQL_ROOT_PASSWORD))
     provision_instance(manager, setup)
 
-    logger.info("Load sakila on manager")
+    # Sakila hardcodes InnoDB engine (!= NDBENGINE) hence it is not replicated
+    # across the cluster. We load it on all instances.
+    logger.info("Load sakila on all instances")
     script_tpl = jinja_env.get_template("sakila.sh.j2")
     setup = ScriptSetup(script_tpl.render(mysql_root_password=MYSQL_ROOT_PASSWORD))
-    provision_instance(manager, setup)
+    async with asyncio.TaskGroup() as tg:
+        for inst in instances:
+            tg.create_task(asyncio.to_thread(provision_instance, inst, setup))
 
     logger.info(f"Manager: {manager.public_ip_address}")
     logger.info(f"Workers: {[w.public_ip_address for w in workers]}")

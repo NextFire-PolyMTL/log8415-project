@@ -40,8 +40,8 @@ class SSHExecError(RuntimeError):
 def ssh_exec(ssh_client: SSHClient, cmd: str):
     stdin, stdout, stderr = ssh_client.exec_command(cmd, get_pty=True)
     status = stdout.channel.recv_exit_status()
-    logger.info("\n" + stdout.read().decode().strip())
     if status != 0:
+        logger.error("\n" + stdout.read().decode().strip())
         raise SSHExecError(stderr.read().decode())
 
 

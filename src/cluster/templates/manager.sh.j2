@@ -1,0 +1,39 @@
+#!/bin/bash -xe
+
+fallocate -l 1G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+
+dnf install -y epel-release https://dev.mysql.com/get/mysql80-community-release-el7-11.noarch.rpm
+dnf config-manager --disable mysql80-community
+dnf config-manager --enable mysql-cluster-7.6-community
+dnf install -y mysql-cluster-community-server mysql-cluster-community-management-server
+
+mkdir -p /var/lib/mysql-cluster
+
+tee /var/lib/mysql-cluster/config.ini <<EOF
+[ndbd default]
+NoOfReplicas=1
+DataDir=/usr/local/mysql/data
+
+[ndb_mgmd]
+HostName={{manager.private_ip_address}}
+DataDir=/var/lib/mysql-cluster
+
+{% for worker in workers %}
+[ndbd]
+HostName={{worker.private_ip_address}}
+{% endfor %}
+
+[mysqld]
+HostName={{manager.private_ip_address}}
+EOF
+
+ndb_mgmd --initial -f /var/lib/mysql-cluster/config.ini
+
+tee /etc/my.cnf <<EOF
+[mysqld]
+ndbcluster
+bind-address=0.0.0.0
+EOF

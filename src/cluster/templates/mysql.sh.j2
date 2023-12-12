@@ -1,13 +1,5 @@
 #!/bin/bash -xe
 
-dnf install -y https://dev.mysql.com/get/mysql80-community-release-el9-5.noarch.rpm
-dnf install -y mysql-community-server
-
-tee /etc/my.cnf.d/project.cnf <<EOF
-[mysqld]
-bind-address=0.0.0.0
-EOF
-
 systemctl start mysqld
 
 TEMP_PASSWORD=$(journalctl -u mysqld | grep 'temporary password' | awk '{print $NF}')

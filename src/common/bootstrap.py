@@ -1,5 +1,6 @@
 import io
 import logging
+import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable
 
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 def bootstrap_instance(
     instance: "Instance", setup: Callable[["Instance", SSHClient], None]
 ):
-    logger.info(f"Bootstrapping {instance=}")
+    logger.info(f"Bootstrapping {instance=} {instance.public_ip_address=}")
     ssh_key = RSAKey.from_private_key_file(AWS_KEYPAIR_PEM.as_posix())
     with SSHClient() as ssh_client:
         ssh_client.set_missing_host_key_policy(AutoAddPolicy())
@@ -37,11 +38,14 @@ def bootstrap_instance(
 class ScriptSetup:
     script: str
 
+    def __post_init__(self):
+        self.name = uuid.uuid4()
+
     @backoff.on_exception(backoff.constant, SSHExecError)
     def __call__(self, instance: "Instance", ssh_client: SSHClient):
         with io.BytesIO() as f:
             f.write(self.script.encode())
             f.seek(0)
             with ssh_client.open_sftp() as sftp:
-                sftp.putfo(f, "setup.sh")
-        ssh_exec(ssh_client, "chmod +x setup.sh && sudo ./setup.sh")
+                sftp.putfo(f, f"{self.name}.sh")
+        ssh_exec(ssh_client, f"chmod +x {self.name}.sh && sudo ./{self.name}.sh")

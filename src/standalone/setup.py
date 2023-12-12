@@ -29,7 +29,7 @@ async def standalone_setup():
         ],
     )
 
-    instances = launch_instances(sg, ["t2.micro"])
+    instances = launch_instances([sg], ["t2.micro"])
     inst = instances[0]
     await asyncio.to_thread(wait_instance, inst)
 
@@ -46,3 +46,5 @@ async def standalone_setup():
     provision_instance(inst, setup)
 
     logger.info(f"Public IP: {inst.public_ip_address}")
+
+    return inst, sg

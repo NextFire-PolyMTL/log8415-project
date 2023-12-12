@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import TYPE_CHECKING
 
 from common.infra import launch_instances, setup_security_group
 from common.provision import ScriptSetup, provision_instance
@@ -7,6 +8,9 @@ from common.utils import get_default_vpc, wait_instance
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from cluster.secrets import MYSQL_ROOT_PASSWORD
+
+if TYPE_CHECKING:
+    from mypy_boto3_ec2.service_resource import Vpc
 
 logger = logging.getLogger(__name__)
 
@@ -17,34 +21,30 @@ jinja_env = Environment(
 
 async def cluster_setup():
     vpc = get_default_vpc()
-    sg = setup_security_group(
-        vpc,
-        [
-            {
-                "FromPort": 3306,
-                "ToPort": 3306,
-                "IpProtocol": "tcp",
-                "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
-            },
-            {
-                "FromPort": 0,
-                "ToPort": 65535,
-                "IpProtocol": "tcp",
-                "IpRanges": [{"CidrIp": vpc.cidr_block}],
-            },
-            {
-                "FromPort": 0,
-                "ToPort": 65535,
-                "IpProtocol": "udp",
-                "IpRanges": [{"CidrIp": vpc.cidr_block}],
-            },
-        ],
+    _, _, sg = await make_cluster(vpc)
+    # Allow mysqld access from anywhere
+    sg.authorize_ingress(
+        CidrIp="0.0.0.0/0", FromPort=3306, ToPort=3306, IpProtocol="tcp"
     )
 
-    instances = launch_instances(sg, ["t2.micro"] * 4)
+
+async def make_cluster(vpc: "Vpc"):
+    sg = setup_security_group(vpc)
+
+    instances = launch_instances([sg], ["t2.micro", "t2.micro", "t2.micro", "t2.micro"])
     async with asyncio.TaskGroup() as tg:
         for inst in instances:
             tg.create_task(asyncio.to_thread(wait_instance, inst))
+
+    logger.info("Update security group")
+    for inst in instances:
+        # Allow everything between cluster instances
+        sg.authorize_ingress(
+            CidrIp=inst.private_ip_address + "/32",
+            FromPort=-1,
+            ToPort=-1,
+            IpProtocol="-1",
+        )
 
     manager = instances[0]
     workers = instances[1:]
@@ -91,3 +91,5 @@ async def cluster_setup():
 
     logger.info(f"Manager: {manager.public_ip_address}")
     logger.info(f"Workers: {[w.public_ip_address for w in workers]}")
+
+    return manager, workers, sg

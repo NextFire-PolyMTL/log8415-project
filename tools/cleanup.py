@@ -19,8 +19,11 @@ def giveup(e: Exception):
 def terminate_ec2():
     instances = ec2_res.instances.filter(
         Filters=[
-            {"Name": "tag:Name", "Values": [f"*{AWS_RES_NAME}*"]},
-            {"Name": "instance-state-name", "Values": ["pending", "running"]},
+            {"Name": "tag:Name", "Values": [AWS_RES_NAME]},
+            {
+                "Name": "instance-state-name",
+                "Values": ["pending", "running", "stopped"],
+            },
         ]
     )
     for inst in instances:
@@ -31,7 +34,9 @@ def terminate_ec2():
 @backoff.on_exception(backoff.constant, ClientError, giveup=giveup)
 def delete_security_groups():
     try:
-        security_groups = ec2_res.security_groups.filter(GroupNames=[AWS_RES_NAME])
+        security_groups = ec2_res.security_groups.filter(
+            Filters=[{"Name": "tag:Name", "Values": [AWS_RES_NAME]}]
+        )
         for sg in security_groups:
             logger.info(f"Deleting security group: {sg}")
             sg.delete()

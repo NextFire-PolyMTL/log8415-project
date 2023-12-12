@@ -1,5 +1,6 @@
 import logging
 from typing import TYPE_CHECKING, Sequence
+import uuid
 
 from common.config import (
     AWS_KEYPAIR_NAME,
@@ -19,12 +20,29 @@ logger = logging.getLogger(__name__)
 def setup_security_group(vpc: "Vpc", permissions: Sequence["IpPermissionTypeDef"] = ()):
     logger.info("Setting up security group")
     sg = ec2_res.create_security_group(
-        GroupName=AWS_RES_NAME,
+        GroupName=str(uuid.uuid4()),
         Description=AWS_RES_NAME,
         VpcId=vpc.id,
+        TagSpecifications=[
+            {
+                "ResourceType": "security-group",
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": AWS_RES_NAME,
+                    },
+                ],
+            }
+        ],
     )
     sg.authorize_ingress(
         IpPermissions=[
+            {
+                "FromPort": -1,
+                "ToPort": -1,
+                "IpProtocol": "icmp",
+                "IpRanges": [{"CidrIp": vpc.cidr_block}],
+            },
             {
                 "FromPort": 22,
                 "ToPort": 22,
@@ -37,7 +55,10 @@ def setup_security_group(vpc: "Vpc", permissions: Sequence["IpPermissionTypeDef"
     return sg
 
 
-def launch_instances(sg: "SecurityGroup", instance_types: list["InstanceTypeType"]):
+def launch_instances(
+    security_groups: Sequence["SecurityGroup"],
+    instance_types: Sequence["InstanceTypeType"],
+):
     logger.info("Launching instances")
     avail_zones = [
         zone["ZoneName"]
@@ -49,7 +70,7 @@ def launch_instances(sg: "SecurityGroup", instance_types: list["InstanceTypeType
         zone = avail_zones[i % len(avail_zones)]
         instances += ec2_res.create_instances(
             KeyName=AWS_KEYPAIR_NAME,
-            SecurityGroupIds=[sg.id],
+            SecurityGroupIds=[sg.id for sg in security_groups],
             InstanceType=itype,
             ImageId=IMAGE_ID,
             MaxCount=1,

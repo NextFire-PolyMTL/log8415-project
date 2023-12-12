@@ -2,12 +2,12 @@
 
 export DEBIAN_FRONTEND=noninteractive
 
+apt update
+apt install -y libaio1 libmecab2
+
 wget https://dev.mysql.com/get/Downloads/MySQL-Cluster-7.6/mysql-cluster_7.6.6-1ubuntu18.04_amd64.deb-bundle.tar
 mkdir install
 tar xvf mysql-cluster_7.6.6-1ubuntu18.04_amd64.deb-bundle.tar -C install
-
-apt update
-apt install libaio1 libmecab2
 
 dpkg -i install/mysql-common_7.6.6-1ubuntu18.04_amd64.deb
 

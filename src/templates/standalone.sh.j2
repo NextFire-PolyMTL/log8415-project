@@ -2,8 +2,8 @@
 
 export DEBIAN_FRONTEND=noninteractive
 
-apt-get update
-apt-get install -y mysql-server
+apt update
+apt install -y mysql-server
 
 tee /etc/mysql/my.cnf <<EOF
 [mysqld]

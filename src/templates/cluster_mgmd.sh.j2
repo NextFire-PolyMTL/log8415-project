@@ -23,6 +23,10 @@ HostName=ip-{{worker.private_ip_address | replace(".", "-")}}.ec2.internal
 
 [mysqld]
 HostName=ip-{{manager.private_ip_address | replace(".", "-")}}.ec2.internal
+{% for worker in workers %}
+[mysqld]
+HostName=ip-{{worker.private_ip_address | replace(".", "-")}}.ec2.internal
+{% endfor %}
 EOF
 
 tee /etc/systemd/system/ndb_mgmd.service <<EOF

@@ -38,12 +38,6 @@ async def cluster_setup():
                 "IpProtocol": "udp",
                 "IpRanges": [{"CidrIp": vpc.cidr_block}],
             },
-            {
-                "FromPort": -1,
-                "ToPort": -1,
-                "IpProtocol": "icmp",
-                "IpRanges": [{"CidrIp": vpc.cidr_block}],
-            },
         ],
     )
 
@@ -55,26 +49,28 @@ async def cluster_setup():
     manager = instances[0]
     workers = instances[1:]
 
-    logger.info(f"Setup mgmd on manager {manager.public_ip_address}")
-    script_tpl = jinja_env.get_template("cluster_manager.sh.j2")
+    logger.info("Setup mgmd on manager")
+    script_tpl = jinja_env.get_template("cluster_mgmd.sh.j2")
     setup = ScriptSetup(script_tpl.render(manager=manager, workers=workers))
     bootstrap_instance(manager, setup)
 
-    logger.info(f"Setup workers {[w.public_ip_address for w in workers]}")
-    script_tpl = jinja_env.get_template("cluster_worker.sh.j2")
+    logger.info("Setup ndbd on worker instances")
+    script_tpl = jinja_env.get_template("cluster_ndbd.sh.j2")
     setup = ScriptSetup(script_tpl.render(manager=manager))
     async with asyncio.TaskGroup() as tg:
         for worker in workers:
             tg.create_task(asyncio.to_thread(bootstrap_instance, worker, setup))
 
-    logger.info(f"Setup mysql on manager {manager.public_ip_address}")
+    logger.info("Setup mysql on all instances")
     script_tpl = jinja_env.get_template("cluster_mysql.sh.j2")
     setup = ScriptSetup(
         script_tpl.render(manager=manager, mysql_root_password=MYSQL_ROOT_PASSWORD)
     )
-    bootstrap_instance(manager, setup)
+    async with asyncio.TaskGroup() as tg:
+        for inst in instances:
+            tg.create_task(asyncio.to_thread(bootstrap_instance, inst, setup))
 
-    logger.info(f"Load sakila db on manager {manager.public_ip_address}")
+    logger.info("Load sakila on manager")
     script_tpl = jinja_env.get_template("sakila.sh.j2")
     setup = ScriptSetup(script_tpl.render(mysql_root_password=MYSQL_ROOT_PASSWORD))
     bootstrap_instance(manager, setup)

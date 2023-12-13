@@ -63,7 +63,7 @@ app.use("*", logger());
 app.post("/direct", async (c) => {
   const body = await c.req.json();
   const res = await execute(body.query, () => clients.manager);
-  return c.json(res);
+  return c.json(res.rows);
 });
 
 app.post("/random", async (c) => {
@@ -72,7 +72,7 @@ app.post("/random", async (c) => {
     const index = Math.floor(Math.random() * clients.workers.length);
     return clients.workers[index];
   });
-  return c.json(res);
+  return c.json(res.rows);
 });
 
 app.post("/customized", async (c) => {
@@ -97,7 +97,7 @@ app.post("/customized", async (c) => {
     const index = pingTimes.indexOf(Math.min(...pingTimes));
     return clients.workers[index];
   });
-  return c.json(res);
+  return c.json(res.rows);
 });
 
 Deno.serve({ port: 9000, hostname: "0.0.0.0" }, app.fetch);

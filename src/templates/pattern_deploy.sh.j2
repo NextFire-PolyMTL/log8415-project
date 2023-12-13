@@ -12,4 +12,20 @@ tee config.json <<'EOF'
 {{config_json}}
 EOF
 
-nohup ~/.deno/bin/deno run -A main.ts &
+tee /etc/systemd/system/pattern.service <<EOF
+[Unit]
+Description=pattern
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=$PWD
+ExecStart=$HOME/.deno/bin/deno run -A main.ts
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable --now pattern

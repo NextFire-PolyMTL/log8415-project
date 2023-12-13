@@ -4,10 +4,9 @@ from typing import TYPE_CHECKING
 
 from common.infra import launch_instances, setup_security_group
 from common.provision import ScriptSetup, provision_instance
+from common.secrets import MYSQL_ROOT_PASSWORD
 from common.utils import get_default_vpc, wait_instance
 from jinja2 import Environment, PackageLoader, select_autoescape
-
-from cluster.secrets import MYSQL_ROOT_PASSWORD
 
 if TYPE_CHECKING:
     from mypy_boto3_ec2.service_resource import Instance, Vpc

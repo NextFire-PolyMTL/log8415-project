@@ -3,10 +3,10 @@ import logging
 from importlib.resources import files
 from typing import TYPE_CHECKING, Sequence
 
-from cluster.secrets import MYSQL_ROOT_PASSWORD
 from cluster.setup import make_cluster
 from common.infra import launch_instances, setup_security_group
 from common.provision import ScriptSetup, provision_instance
+from common.secrets import MYSQL_ROOT_PASSWORD
 from common.utils import get_default_vpc, wait_instance
 from jinja2 import Environment, PackageLoader, select_autoescape
 

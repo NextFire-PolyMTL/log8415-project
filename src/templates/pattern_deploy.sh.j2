@@ -1,0 +1,15 @@
+#!/bin/bash -xe
+
+apt update
+DEBIAN_FRONTEND=noninteractive apt install -y unzip
+curl -fsSL https://deno.land/x/install/install.sh | sh
+
+tee main.ts <<EOF
+{{main_ts}}
+EOF
+
+tee config.json <<EOF
+{{config_json}}
+EOF
+
+nohup ~/.deno/bin/deno run -A main.ts &

@@ -75,7 +75,7 @@ async def make_proxy(
     )
     config_json = json.dumps(config)
     setup = ScriptSetup(script_tpl.render(main_ts=main_ts, config_json=config_json))
-    provision_instance(manager, setup)
+    provision_instance(proxy, setup)
 
     return proxy, sg
 

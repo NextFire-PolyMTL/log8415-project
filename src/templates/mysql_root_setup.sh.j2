@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/sh -xe
 
 mysql -uroot <<'EOF'
 ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '{{mysql_root_password}}';

@@ -3,7 +3,7 @@
 apt update
 DEBIAN_FRONTEND=noninteractive apt install -y mysql-server
 
-tee /etc/mysql/my.cnf <<EOF
+tee /etc/mysql/my.cnf <<'EOF'
 [mysqld]
 bind-address=0.0.0.0
 EOF

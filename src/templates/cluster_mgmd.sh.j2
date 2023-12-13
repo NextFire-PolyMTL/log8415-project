@@ -5,7 +5,7 @@ DEBIAN_FRONTEND=noninteractive apt install -y mysql-cluster-community-management
 
 mkdir -p /var/lib/mysql-cluster
 
-tee /var/lib/mysql-cluster/config.ini <<EOF
+tee /var/lib/mysql-cluster/config.ini <<'EOF'
 [ndbd default]
 NoOfReplicas={{workers | length}}
 DataDir=/usr/local/mysql/data
@@ -27,7 +27,7 @@ HostName=ip-{{worker.private_ip_address | replace(".", "-")}}.ec2.internal
 {% endfor %}
 EOF
 
-tee /etc/systemd/system/ndb_mgmd.service <<EOF
+tee /etc/systemd/system/ndb_mgmd.service <<'EOF'
 [Unit]
 Description=MySQL NDB Cluster Management Server
 After=network.target auditd.service
@@ -35,7 +35,7 @@ After=network.target auditd.service
 [Service]
 Type=forking
 ExecStart=/usr/sbin/ndb_mgmd -f /var/lib/mysql-cluster/config.ini
-ExecReload=/bin/kill -HUP \$MAINPID
+ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
 Restart=on-failure
 

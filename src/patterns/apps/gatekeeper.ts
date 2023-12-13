@@ -12,7 +12,7 @@ app.use("*", logger());
 app.post("/:slug", async (c) => {
   const slug = c.req.param("slug");
 
-  const resp = await fetch(`${config.proxy}/${slug}`, {
+  const resp = await fetch(`${config.trusted}/${slug}`, {
     method: "POST",
     body: c.req.raw.body,
   });

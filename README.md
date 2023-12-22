@@ -13,8 +13,8 @@
 poetry install
 
 # Copy and edit secrets
-cp ./src/common/secrets.example.py ./src/common/secrets.py
-$EDITOR ./src/common/secrets.py
+cp src/common/secrets.example.py src/common/secrets.py
+$EDITOR src/common/secrets.py
 ```
 
 ## Deploy
@@ -42,5 +42,5 @@ poetry run python3 -m patterns
 Terminate all project AWS resources.
 
 ```sh
-poetry run ./tools/cleanup.py
+poetry run tools/cleanup.py
 ```

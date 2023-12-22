@@ -3,10 +3,9 @@ import logging
 
 from common.infra import launch_instances, setup_security_group
 from common.provision import ScriptSetup, provision_instance
+from common.secrets import MYSQL_ROOT_PASSWORD
 from common.utils import get_default_vpc, wait_instance
 from jinja2 import Environment, PackageLoader, select_autoescape
-
-from standalone.secrets import MYSQL_ROOT_PASSWORD
 
 logger = logging.getLogger(__name__)
 

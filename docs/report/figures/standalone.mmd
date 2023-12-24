@@ -1,0 +1,10 @@
+flowchart LR
+    subgraph Internet
+        U([fa:fa-computer user])
+    end
+    subgraph VPC
+        subgraph SG[Security Group]
+            S[(fa:fa-server fa:fa-database standalone)]
+        end
+    end
+    U --> |3306/TCP| S

@@ -1,0 +1,25 @@
+flowchart TB
+    subgraph Internet
+        U([fa:fa-computer user])
+    end
+    subgraph VPC
+        subgraph SG[Security Group]
+            M[(fa:fa-server fa:fa-circle-nodes manager)]
+            W1[(fa:fa-server fa:fa-database worker 1)]
+            W2[(fa:fa-server fa:fa-database worker 2)]
+            W3[(fa:fa-server fa:fa-database worker 3)]
+            W1 .-> |1186/TCP| M
+            W2 .-> |1186/TCP| M
+            W3 .-> |1186/TCP| M
+            M <.-> |2202/TCP| W1
+            M <.-> |2202/TCP| W2
+            M <.-> |2202/TCP| W3
+            W1 <.-> |2202/TCP| W2
+            W2 <.-> |2202/TCP| W3
+            W3 <.-> |2202/TCP| W1
+        end
+    end
+    U --> |3306/TCP| M
+    U --> |3306/TCP| W1
+    U --> |3306/TCP| W2
+    U --> |3306/TCP| W3

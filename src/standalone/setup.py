@@ -1,4 +1,3 @@
-import asyncio
 import logging
 
 from common.infra import launch_instances, setup_security_group
@@ -14,7 +13,7 @@ jinja_env = Environment(
 )
 
 
-async def standalone_setup():
+def standalone_setup():
     vpc = get_default_vpc()
     sg = setup_security_group(
         vpc,
@@ -30,7 +29,7 @@ async def standalone_setup():
 
     instances = launch_instances([sg], ["t2.micro"])
     inst = instances[0]
-    await asyncio.to_thread(wait_instance, inst)
+    wait_instance(inst)
 
     script_tpl = jinja_env.get_template("standalone.sh.j2")
     setup = ScriptSetup(script_tpl.render())

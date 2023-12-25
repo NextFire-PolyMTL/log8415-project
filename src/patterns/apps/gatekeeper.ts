@@ -18,11 +18,13 @@ app.post("/:slug", async (c) => {
   });
 
   c.status(resp.status);
-  if (resp.ok) {
-    return c.json(await resp.json());
-  } else {
-    return c.text(await resp.text());
+  let json;
+  try {
+    json = await resp.json();
+  } catch {
+    json = {};
   }
+  return c.json(json);
 });
 
 Deno.serve({ port: 3000, hostname: "0.0.0.0" }, app.fetch);

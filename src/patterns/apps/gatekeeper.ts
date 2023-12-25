@@ -21,13 +21,11 @@ app.post("/:slug", async (c) => {
 
   // Return response from trusted host
   c.status(resp.status);
-  let json;
-  try {
-    json = await resp.json();
-  } catch {
-    json = [];
+  if (resp.ok) {
+    return c.json(await resp.json());
+  } else {
+    return c.text(await resp.text());
   }
-  return c.json(json);
 });
 
 Deno.serve({ port: 3000, hostname: "0.0.0.0" }, app.fetch);

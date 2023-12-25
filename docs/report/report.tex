@@ -250,32 +250,49 @@ The cluster deployment appear to be slightly slower than the standalone server (
 
 The patterns module deploys a cluster (Figure~\ref{fig:patterns_cluster}) behind a proxy, a trusted host and a gatekeeper.
 
-The gatekeeper is accessible from the Internet on port 3000. It receives POST requests from the client on \texttt{/direct}, \texttt{/random} and \texttt{/customized} routes with the query in the body (\texttt{query} field). After forwarding to the trusted host and proxy, the cluster response is returned back to the client. A request example is shown in Figure~\ref{fig:patterns_http}.
-
+The gatekeeper is accessible from the Internet on port 3000. It receives POST requests from the client on \texttt{/direct}, \texttt{/random} and \texttt{/customized} routes with the query in the body (\texttt{query} field). After forwarding to the trusted host and proxy, the cluster response is returned back to the client.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.5\linewidth]{figures/Screenshot 2023-12-25 at 17.12.46.png}
+    \includegraphics[width=0.75\linewidth]{figures/Screenshot 2023-12-25 at 23.18.08.png}
     \caption{Patterns cluster}
     \label{fig:patterns_cluster}
 \end{figure}
 
+Sample requests are shown in Figures~\ref{fig:patterns_random}, \ref{fig:patterns_direct} and \ref{fig:patterns_customized}. The first request is a read only query (\texttt{SELECT}) on \texttt{/random} that will be forwarded to a random worker node. The second request is a write query (\texttt{INSERT}) on \texttt{/direct} that will be replicated to all nodes (the response is the one from the master). The third request is a read only query (\texttt{SELECT}) on \texttt{/customized} that will be forwarded to the fastest node (according to ping time). This last query confirms that our previous write was successfully replicated to all nodes.
+
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.75\linewidth]{figures/Screenshot 2023-12-25 at 17.10.13.png}
-    \caption{Gatekeeper request (random)}
-    \label{fig:patterns_http}
+    \includegraphics[width=\linewidth]{figures/Screenshot 2023-12-25 at 23.20.43.png}
+    \includegraphics[width=0.75\linewidth]{figures/Screenshot 2023-12-25 at 23.20.52.png}
+    \caption{Gatekeeper request (SELECT, \texttt{/random})}
+    \label{fig:patterns_random}
 \end{figure}
 
-Figure~\ref{fig:patterns_logs} shows the logs of the different components. We can see that the gatekeeper (left) receives the request on \texttt{/random} and forwards it to the trusted host. The trusted host (middle) sanitizes the query and then forwards it to the proxy (right) that chooses a random worker to execute this read only query.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{figures/Screenshot 2023-12-25 at 23.21.17.png}
+    \caption{Gatekeeper request (INSERT, \texttt{/direct})}
+    \label{fig:patterns_direct}
+\end{figure}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{figures/Screenshot 2023-12-25 at 23.24.17.png}
+    \includegraphics[width=0.75\linewidth]{figures/Screenshot 2023-12-25 at 23.24.23.png}
+    \caption{Gatekeeper request (SELECT, \texttt{/customized})}
+    \label{fig:patterns_customized}
+\end{figure}
+
+Figure~\ref{fig:patterns_logs} shows the logs of the different components. We can see that the gatekeeper (left) receives the first request on \texttt{/random} and forwards it to the trusted host. The trusted host (middle) sanitizes the query and then forwards it to the proxy (right) that chooses a random worker to execute this read only query. The second query on \texttt{/direct} is a write query that is replicated to all nodes. Finally, the third query on \texttt{/customized} requires the proxy to ping all nodes and select the fastest one to execute the query.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=\linewidth]{figures/Screenshot 2023-12-25 at 17.11.34.png}
-    \caption{Patterns logs (gatekeeper, trusted host, proxy)}
+    \includegraphics[width=\linewidth]{figures/Screenshot 2023-12-25 at 23.24.34.png}
+    \caption{Patterns apps logs (gatekeeper, trusted host, proxy)}
     \label{fig:patterns_logs}
 \end{figure}
 
+\clearpage
 \section{Lessons Learned}
 
 \begin{itemize}
@@ -320,6 +337,7 @@ Changes since the recording:
 
 \begin{itemize}
     \item (proxy) Manager node is now included in the considered instances for the \texttt{/customized} route (as required by the assignment)
+    \item (proxy) The full response object from the cluster is now returned (instead of only the \texttt{rows} field). This is reflected in the Figures~\ref{fig:patterns_random}, \ref{fig:patterns_direct} and \ref{fig:patterns_customized}.
 \end{itemize}
 
 \addsec{Signatures}

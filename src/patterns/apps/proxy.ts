@@ -78,8 +78,9 @@ app.post("/random", async (c) => {
 app.post("/customized", async (c) => {
   const body = await c.req.json();
   const res = await execute(body.query, async () => {
+    const allClients = [clients.manager, ...clients.workers];
     const pingTimes = await Promise.all(
-      clients.workers.map(
+      allClients.map(
         (worker) =>
           new Promise<number>((resolve, reject) => {
             const start = Date.now();
@@ -95,7 +96,7 @@ app.post("/customized", async (c) => {
     );
     console.log("ping times", pingTimes);
     const index = pingTimes.indexOf(Math.min(...pingTimes));
-    return clients.workers[index];
+    return allClients[index];
   });
   return c.json(res.rows);
 });

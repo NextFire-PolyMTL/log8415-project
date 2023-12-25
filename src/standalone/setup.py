@@ -31,14 +31,17 @@ def standalone_setup():
     inst = instances[0]
     wait_instance(inst)
 
+    # Install mysql server
     script_tpl = jinja_env.get_template("standalone.sh.j2")
     setup = ScriptSetup(script_tpl.render())
     provision_instance(inst, setup)
 
+    #  Update root user
     script_tpl = jinja_env.get_template("mysql_root_setup.sh.j2")
     setup = ScriptSetup(script_tpl.render(mysql_root_password=MYSQL_ROOT_PASSWORD))
     provision_instance(inst, setup)
 
+    # Load sakila database
     script_tpl = jinja_env.get_template("sakila.sh.j2")
     setup = ScriptSetup(script_tpl.render(mysql_root_password=MYSQL_ROOT_PASSWORD))
     provision_instance(inst, setup)

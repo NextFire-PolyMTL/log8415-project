@@ -1,7 +1,5 @@
 #!/bin/sh -xe
 # Adapted from https://www.jamescoyle.net/how-to/1131-benchmark-mysql-server-performance-with-sysbench
-# ssh -i labsuser.pem -L 3306:localhost:3306 -N -T ubuntu@<public_ip> -v
-# benchmark.sh 127.0.0.1 root <password> sakila
 
 if [ $# -eq 0 ]; then
     echo "Usage: $0 <mysql_host> <mysql_user> <mysql_password> <mysql_db>"

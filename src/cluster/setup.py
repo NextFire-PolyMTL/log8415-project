@@ -20,6 +20,7 @@ jinja_env = Environment(
 
 async def cluster_setup():
     vpc = get_default_vpc()
+    # Start the cluster
     _, _, sg = await make_cluster(vpc)
     # Allow mysqld access from anywhere
     sg.authorize_ingress(
@@ -30,6 +31,7 @@ async def cluster_setup():
 async def make_cluster(vpc: "Vpc"):
     sg = setup_security_group(vpc)
 
+    # Launch 4 instances
     instances = launch_instances([sg], ["t2.micro", "t2.micro", "t2.micro", "t2.micro"])
     async with asyncio.TaskGroup() as tg:
         for inst in instances:
@@ -79,14 +81,17 @@ async def make_cluster(vpc: "Vpc"):
 
 
 def _setup_mysqld(instance: "Instance", manager: "Instance"):
+    # Install cluster-compatible mysql-server
     script_tpl = jinja_env.get_template("cluster_mysql.sh.j2")
     setup = ScriptSetup(script_tpl.render(manager=manager))
     provision_instance(instance, setup)
 
+    # Update root user
     script_tpl = jinja_env.get_template("mysql_root_setup.sh.j2")
     setup = ScriptSetup(script_tpl.render(mysql_root_password=MYSQL_ROOT_PASSWORD))
     provision_instance(instance, setup)
 
+    # Load sakila database
     # Sakila hardcodes InnoDB engine (!= NDBENGINE) hence it is not replicated
     # across the cluster. We load it on all instances.
     script_tpl = jinja_env.get_template("sakila.sh.j2")

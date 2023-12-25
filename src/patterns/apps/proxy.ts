@@ -1,8 +1,10 @@
 import { logger } from "https://deno.land/x/hono@v3.11.4/middleware.ts";
 import { Hono } from "https://deno.land/x/hono@v3.11.4/mod.ts";
 import { Client } from "https://deno.land/x/mysql@v2.12.1/mod.ts";
+// https://www.npmjs.com/package/sql-summary
 import sqlSummary from "npm:sql-summary@^1.0.1";
 
+// Load config file
 const configPath = Deno.args[0] || "./config.json";
 console.log(`Loading config from ${configPath}`);
 const config = JSON.parse(await Deno.readTextFile(configPath));
@@ -33,6 +35,7 @@ async function createClients(
   return { manager, workers };
 }
 
+// Create mysql clients
 const clients = await createClients(
   config.manager,
   config.workers,
@@ -41,6 +44,12 @@ const clients = await createClients(
   config.db
 );
 
+/**
+ * Execute query on the right instance(s)
+ * @param query
+ * @param worker Function that returns the selected worker in case of a read-only query
+ * @returns Query result (always from the manager in case of a write query)
+ */
 async function execute(query: string, worker: () => Client | Promise<Client>) {
   const summary = sqlSummary(query) as string;
   if (summary.includes("SELECT") && !summary.includes("UPDATE")) {
@@ -60,25 +69,36 @@ const app = new Hono();
 
 app.use("*", logger());
 
+/**
+ * Direct hit: always execute the query on the manager
+ */
 app.post("/direct", async (c) => {
   const body = await c.req.json();
   const res = await execute(body.query, () => clients.manager);
   return c.json(res.rows);
 });
 
+/**
+ * Random: randomly select a worker
+ */
 app.post("/random", async (c) => {
   const body = await c.req.json();
   const res = await execute(body.query, () => {
+    // Random selection
     const index = Math.floor(Math.random() * clients.workers.length);
     return clients.workers[index];
   });
   return c.json(res.rows);
 });
 
+/**
+ * Customized: select the worker with the lowest ping time
+ */
 app.post("/customized", async (c) => {
   const body = await c.req.json();
   const res = await execute(body.query, async () => {
     const allClients = [clients.manager, ...clients.workers];
+    // Ping all instances with a SELECT 1 query
     const pingTimes = await Promise.all(
       allClients.map(
         (worker) =>
@@ -95,6 +115,7 @@ app.post("/customized", async (c) => {
       )
     );
     console.log("ping times", pingTimes);
+    // Select the worker with the lowest ping time
     const index = pingTimes.indexOf(Math.min(...pingTimes));
     return allClients[index];
   });

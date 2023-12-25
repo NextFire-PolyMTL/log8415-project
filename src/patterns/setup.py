@@ -25,12 +25,15 @@ apps_res = files(patterns.apps)
 
 async def patterns_setup():
     vpc = get_default_vpc()
+    # Start the cluster
     manager, workers, internal_sg = await make_cluster(vpc)
+    # Setup the proxy
     proxy, proxy_sg = await make_proxy(vpc, manager, workers, internal_sg)
+    # Setup the gatekeeper (and trusted host)
     (gatekeeper, gatekeeper_sg), (trusted_host, _) = await make_gatekeeper(
         vpc, proxy, proxy_sg
     )
-    # Allow any host to access gatekeeper
+    # Allow gatekeeper access from any origin
     gatekeeper_sg.authorize_ingress(
         CidrIp="0.0.0.0/0", FromPort=3000, ToPort=3000, IpProtocol="tcp"
     )
@@ -64,15 +67,16 @@ async def make_proxy(
         IpProtocol="tcp",
     )
 
+    # Setup the Deno app
     script_tpl = jinja_env.get_template("pattern_deploy.sh.j2")
-    main_ts = (apps_res / "proxy.ts").read_text()
+    main_ts = (apps_res / "proxy.ts").read_text()  # app script
     config = dict(
         manager=manager.private_ip_address,
         workers=[w.private_ip_address for w in workers],
         username="root",
         password=MYSQL_ROOT_PASSWORD,
         db="sakila",
-    )
+    )  # app config
     config_json = json.dumps(config)
     setup = ScriptSetup(script_tpl.render(main_ts=main_ts, config_json=config_json))
     provision_instance(proxy, setup)
@@ -95,9 +99,12 @@ async def make_gatekeeper(vpc: "Vpc", proxy: "Instance", proxy_sg: "SecurityGrou
         IpProtocol="tcp",
     )
 
+    # Setup the Trusted Host Deno app
     script_tpl = jinja_env.get_template("pattern_deploy.sh.j2")
-    main_ts = (apps_res / "trusted.ts").read_text()
-    config = dict(proxy=f"http://{proxy.private_ip_address}:9000")
+    main_ts = (apps_res / "trusted.ts").read_text()  # app script
+    config = dict(
+        proxy=f"http://{proxy.private_ip_address}:9000",
+    )  # app config
     config_json = json.dumps(config)
     setup = ScriptSetup(script_tpl.render(main_ts=main_ts, config_json=config_json))
     provision_instance(trusted_host, setup)
@@ -116,9 +123,12 @@ async def make_gatekeeper(vpc: "Vpc", proxy: "Instance", proxy_sg: "SecurityGrou
         IpProtocol="tcp",
     )
 
+    # Setup the Gatekeeper Deno app
     script_tpl = jinja_env.get_template("pattern_deploy.sh.j2")
-    main_ts = (apps_res / "gatekeeper.ts").read_text()
-    config = dict(trusted=f"http://{trusted_host.private_ip_address}:8000")
+    main_ts = (apps_res / "gatekeeper.ts").read_text()  # app script
+    config = dict(
+        trusted=f"http://{trusted_host.private_ip_address}:8000",
+    )  # app config
     config_json = json.dumps(config)
     setup = ScriptSetup(script_tpl.render(main_ts=main_ts, config_json=config_json))
     provision_instance(gatekeeper, setup)
